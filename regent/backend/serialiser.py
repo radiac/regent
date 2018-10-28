@@ -43,7 +43,7 @@ class Serialisable(object):
         Serialise all instance attributes which don't start with an underscore
         """
         attrs = {k: v for k, v in vars(self).items() if not k.startswith('_')}
-        return json.dumps()
+        return json.dumps(attrs)
 
 
 def deserialise(module_name, class_name, attrs):

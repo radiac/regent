@@ -1,8 +1,5 @@
 """
-Regent daemon
+Regent backend
 """
-
-__version__ = "0.1.0"
-__license__ = "BSD"
-__author__ = "Richard Terry"
-__credits__ = []
+from server import Server  # noqa
+from operation import Operation  # noqa

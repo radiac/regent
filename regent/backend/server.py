@@ -14,87 +14,84 @@ Once decoded, the JSON string contains:
         'data':     <json data object>
     }
 """
-import json
-import os
-import socket
-import select
-import struct
+import time
+import traceback
 
-from ..exceptions import ProcessError
-from .storage import Database
+from ..constants import SOCKET_TIMEOUT
+from ..debug import debug
+from ..exceptions import SocketError, ProcessError, DoesNotExist
+from ..socket import Socket
+from .auth import Auth
+from .serialiser import deserialise
+from . import storage
 
 
 class Server(object):
-    def __init__(self, socket_path, socket_secret, db_path):
+    def __init__(
+        self,
+        socket_path,
+        socket_secret,
+        db_path=None,
+        socket_timeout=SOCKET_TIMEOUT,
+    ):
         """
         Create the socket path
         """
-        self.socket_path = socket_path
-        self.socket_secret = socket_secret
-
-        # Operations registry
         self.operations = {}
 
-        self.db = Database(db_path)
+        if db_path:
+            self.db = storage.Database(db_path)
+        else:
+            self.db = storage.Memory()
 
-        self.open_socket()
+        self.socket = Socket(socket_path, socket_secret, socket_timeout)
 
-    def open_socket(self):
-        # Open the socket
-        self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        try:
-            os.remove(self.socket_path)
-        except OSError:
-            pass
-        self.socket.bind(self.socket_path)
-        os.chmod(self.socket_path, 0777)
-
-        # Queue up to 5 connections
-        self.socket.listen(5)
-
-    def run(self):
+    def listen(self):
         """
         Main server loop
         """
+        self.socket.listen()
+
         while 1:
-            client, address = self.socket.accept()
+            client = self.socket.accept()
+            debug('Connected')
+
             try:
-                msg = self.process_connection(client)
-                client.send(json.dumps({'success': msg}))
-            except Exception, e:
+                request = client.read()
+                debug('Received: {}'.format(request))
+                uid, data = self.process(request)
+                client.write({
+                    'success': True,
+                    'uid': uid,
+                    'data': data,
+                })
+
+            except Exception as e:
                 # Try to report the error
+                debug('Error processing request:', e, traceback.format_exc())
                 try:
-                    client.send(json.dumps({'error': str(e)}))
-                except:
+                    client.write({
+                        'error': '{}'.format(e),
+                    })
+                except SocketError:
                     # Fail silently if we can't talk to the client
                     # That may have been the original error
-                    pass
+                    debug('Error writing to client')
+
             try:
                 client.close()
-            except Exception, e:
-                pass
+            except SocketError:
+                debug('Error closing client')
+                continue
 
-    def process_connection(self, client):
+    def process(self, request):
         """
-        Deal with a new connection
+        Process a request
 
-        Returns response string, raises ProcessError if anything goes wrong
+        Returns uid and response, raises ProcessError if anything goes wrong
         """
-        # Read message length and unpack it into an integer
-        raw_msglen = self.read(client, 4)
-        if not raw_msglen:
-            raise ProcessError('Invalid message length')
-        msglen = struct.unpack('>I', raw_msglen)[0]
-
-        # Read message
-        encoded = self.read(client, msglen)
-        try:
-            request = json.loads(encoded)
-        except ValueError:
-            raise ProcessError('Invalid message: could not decode JSON')
-
         # Check the secret
-        if 'secret' not in request or request['socket'] != self.socket_secret:
+        if 'secret' not in request or request['secret'] != self.socket.secret:
             # Auth failed.
             # Sleep for 1 sec - very basic protection against brute-forcing.
             # Given someone would already have shell access to the server
@@ -103,50 +100,21 @@ class Server(object):
             time.sleep(1)
             raise ProcessError('Permission denied')
 
-        # Get the operation name
-        if 'op' not in request:
-            raise ProcessError('Invalid message: operation not found')
-        op_name = request['op']
-        if op_name not in self.operations:
-            raise ProcessError('Unknown operation')
+        # Prepare the operation
+        if 'op' in request:
+            # New operation - check it's valid then create it
+            if request['op'] not in self.operations:
+                raise ProcessError('Unknown operation')
 
-        data = request.get('data')
+            op, auth = self.op_new(request['op'], request.get('data'))
 
-        return self.process_request(client, op_name, data)
+        elif 'uid' in request:
+            # Existing operation - process it
+            uid = request['uid']
+            op, auth = self.op_existing(uid, request.get('data'))
 
-    def read(self, client, msglen):
-        """
-        Read a message of a given length
-        """
-        msg = ''
-        while len(msg) < msglen:
-            # Use select so we can manage the timeout safely
-            sockets = select.select(
-                [client], [], [], settings.SOCKET_TIMEOUT,
-            )[0]
-
-            # If there's nothing to be read, connection failed
-            if len(sockets) != 1:
-                raise ProcessError('Failed waiting for data')
-
-            # Read and store
-            packet = client.recv(msglen - len(msg))
-            if packet == '':
-                raise ProcessError('Unexpected end of data')
-            msg += packet
-        return msg
-
-    def process_request(self, client, op_name, data):
-        """
-        Process a request
-
-        Returns response string, raises ProcessError if anything goes wrong
-        """
-        # Either deserialise existing or create a new operation instance
-        if 'id' in data:
-            op, auth = self.op_existing(op_name, data)
         else:
-            op, auth = self.op_new(op_name, data)
+            raise ProcessError('Invalid message: operation not found')
 
         # Handle authentication response from op
         if auth is True:
@@ -158,20 +126,40 @@ class Server(object):
 
         elif isinstance(auth, Auth):
             # Send the auth request
-            msg = auth.request(op)
+            response = auth.request(op)
 
             # Out-of-stream authorisation required - put operation on hold
             frozen_op = op.serialise()
             frozen_auth = auth.serialise()
-            self.db.save_frozen(op.id, frozen_op, frozen_auth)
+            self.db.save(op.uid, frozen_op, frozen_auth)
 
-            return msg
+            return op.uid, response
 
         # Auth ok
-        op.perform()
-        return op.complete_msg
+        response = op.perform()
+        return None, response
 
-    def op_existing(self, op_name, data):
+    def op_new(self, op_name, data):
+        """
+        Create a new operation
+
+        Returns:
+            op      Operation instance
+            auth    Whether the op wants auth (or is rejecting request)
+        """
+        # Create new op obj and prepare the data
+        op = self.operations[op_name]()
+        try:
+            op.prepare(data)
+        except ValueError as e:
+            raise ProcessError('Invalid data: {}'.format(e))
+
+        # Ask op if it wants to auth
+        auth = op.auth()
+
+        return op, auth
+
+    def op_existing(self, uid, data):
         """
         Defrost and process auth for an existing operation on hold
 
@@ -181,8 +169,8 @@ class Server(object):
         """
         # Load existing op obj and its auth obj from the store
         try:
-            frozen_op, frozen_auth = self.db.load(data['id'])
-        except db.DoesNotExist:
+            frozen_op, frozen_auth = self.db.load(uid)
+        except DoesNotExist:
             raise ProcessError
 
         # Deserialise
@@ -197,26 +185,6 @@ class Server(object):
         # Process auth
         auth_obj.process(op, data)
         auth = op.auth_response(auth_obj)
-
-        return op, auth
-
-    def op_new(self, op_name, data):
-        """
-        Create a new operation
-
-        Returns:
-            op      Operation instance
-            auth    Whether the op wants auth (or is rejecting request)
-        """
-        # Create new op obj and prepare the data
-        op = self.operations[op_name]()
-        try:
-            op.prepare(data['data'])
-        except ValueError as e:
-            raise ProcessError('Invalid data: {}'.format(e))
-
-        # Ask op if it wants to auth
-        auth = op.auth()
 
         return op, auth
 

@@ -1,25 +1,17 @@
 """
 Regent operation
 """
+import random
 import time
 
 
 class Operation(object):
     def __init__(self):
-        # Generate unique ID in case it needs auth/serialisation
-        self._id = '{}-{:0>9}'.format(time.time(), random.randint(0,999999999))
-
-    @property
-    def id(self):
-        """
-        Getter for ID
-
-        The ID is stored on _id so it isn't serialised as part of the object,
-        so that when the op is deserialised a new ID will be generated. This
-        will make it significantly harder to guess the ID when attacking a
-        multi-stage authentication
-        """
-        return self._id
+        timestamp = str(time.time()).replace('.', '')
+        self.uid = '{:0>12}{:0>9}'.format(
+            timestamp,
+            random.randint(0, 999999999),
+        )
 
     def prepare(self, data):
         """
