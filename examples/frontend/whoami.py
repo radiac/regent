@@ -1,3 +1,6 @@
+"""
+Example frontend to call examples/backend/whoami.py
+"""
 from regent.frontend import Client
 
 

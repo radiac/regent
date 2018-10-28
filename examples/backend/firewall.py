@@ -2,6 +2,10 @@
 Open a port on the firewall
 
 Assumes firewall is ufw
+
+Test with:
+    {"secret": "123456", "op": "open", "data": {"ip": "192.168.0.1"}}
+    {"secret": "123456", "op": "close", "data": {"ip": "192.168.0.1"}}
 """
 import ipaddress
 
@@ -30,8 +34,7 @@ class FirewallOpen(Operation):
 
         if (
             addr.is_private or
-            addr.is_multicast or
-            not addr.is_global
+            addr.is_multicast
         ):
             raise ValueError('IP not allowed')
 
@@ -43,11 +46,15 @@ class FirewallOpen(Operation):
         """
         from subprocess import call
         for port in self.PORTS:
-            call(self.COMMAND.format(ip=self.ip, port=port).split(' '))
+            cmd = self.COMMAND.format(ip=self.ip, port=port)
+            print(cmd)
+            ok = call(cmd.split(' '))
+            if ok != 0:
+                raise ValueError('Failed to change firewall')
 
 
 class FirewallClose(FirewallOpen):
-    COMMAND = 'ufw delete proto tcp from {ip} to any port {port}'
+    COMMAND = 'ufw delete allow proto tcp from {ip} to any port {port}'
 
 
 server = Server(

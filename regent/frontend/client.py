@@ -41,3 +41,15 @@ class Client(object):
         response = self.socket.read()
         self.socket.close()
         return response
+
+    def close(self):
+        """
+        Call this once you're done with the client
+        """
+        self.socket.close()
+
+    def reset(self):
+        """
+        Call this to reopen after closing
+        """
+        self.socket.init()

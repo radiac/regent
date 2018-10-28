@@ -24,15 +24,15 @@ class BaseSocket(object):
         self.timeout = timeout
 
     def write(self, data):
-        raw = json.dumps(data)
+        raw = json.dumps(data).encode('utf-8')
         try:
-            self.socket.send(raw + '\n')
+            self.socket.send(raw + b'\n')
         except socket.error:
             raise SocketError('Could not write to client')
 
     def read(self):
-        raw = ''
-        while not raw.endswith('\n'):
+        raw = b''
+        while not raw.endswith(b'\n'):
             # Use select so we can manage the timeout safely
             sockets = select.select(
                 [self.socket], [], [], self.timeout,
@@ -52,6 +52,7 @@ class BaseSocket(object):
             raw += chunk
 
         try:
+            raw = raw.decode('utf-8', 'replace')
             data = json.loads(raw)
         except ValueError as e:
             raise ProcessError(
@@ -72,6 +73,9 @@ class Socket(BaseSocket):
         self.path = path
         self.secret = secret
         self.timeout = timeout
+        self.init()
+
+    def init(self):
         self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
     def listen(self):
