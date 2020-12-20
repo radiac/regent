@@ -16,7 +16,7 @@ if response.get('success'):
     print('Firewall open')
 else:
     print('Error: {}'.format(response.get('error')))
-    sys.exit()
+    sys.exit(1)
 client.close()
 
 time.sleep(5)
@@ -27,3 +27,4 @@ if response.get('success'):
     print('Firewall closed')
 else:
     print('Error: {}'.format(response.get('error')))
+    sys.exit(1)

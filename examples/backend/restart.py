@@ -1,8 +1,8 @@
 """
 Restart the machine
-
-
 """
+from subprocess import call
+
 from regent.backend import Server, Operation, auth
 
 
@@ -56,7 +56,6 @@ class Restart(Operation):
         """
         Perform the operation on the service name from the context
         """
-        from subprocess import call
         call(['service', 'restart', self.service_name])
 
 
