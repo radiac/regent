@@ -9,7 +9,7 @@ import select
 import socket
 
 from .constants import SOCKET_PENDING
-from .exceptions import SocketError, ProcessError
+from .exceptions import ProcessError, SocketError
 
 
 class BaseSocket(object):
@@ -19,44 +19,48 @@ class BaseSocket(object):
     Common functionality for server/client socket, and for new connections on
     a server
     """
+
     def __init__(self, socket, timeout):
         self.socket = socket
         self.timeout = timeout
 
     def write(self, data):
-        raw = json.dumps(data).encode('utf-8')
+        raw = json.dumps(data).encode("utf-8")
         try:
-            self.socket.send(raw + b'\n')
+            self.socket.send(raw + b"\n")
         except socket.error:
-            raise SocketError('Could not write to client')
+            raise SocketError("Could not write to client")
 
     def read(self):
-        raw = b''
-        while not raw.endswith(b'\n'):
+        raw = b""
+        while not raw.endswith(b"\n"):
             # Use select so we can manage the timeout safely
             sockets = select.select(
-                [self.socket], [], [], self.timeout,
+                [self.socket],
+                [],
+                [],
+                self.timeout,
             )[0]
 
             # If there's nothing to be read, connection failed
             if len(sockets) != 1:
-                raise SocketError('Failed waiting for data')
+                raise SocketError("Failed waiting for data")
 
             # Read and store
             try:
                 chunk = self.socket.recv(4096)
             except socket.error:
-                raise SocketError('Could not read from client')
+                raise SocketError("Could not read from client")
             if len(chunk) == 0:
-                raise SocketError('Unexpected end of data')
+                raise SocketError("Unexpected end of data")
             raw += chunk
 
         try:
-            raw = raw.decode('utf-8', 'replace')
+            raw = raw.decode("utf-8", "replace")
             data = json.loads(raw)
         except ValueError as e:
             raise ProcessError(
-                'Invalid message, could not decode JSON: {}'.format(e),
+                "Invalid message, could not decode JSON: {}".format(e),
             )
 
         return data
@@ -65,7 +69,7 @@ class BaseSocket(object):
         try:
             self.socket.close()
         except socket.error:
-            raise SocketError('Client already disconnected')
+            raise SocketError("Client already disconnected")
 
 
 class Socket(BaseSocket):
@@ -108,7 +112,7 @@ class Socket(BaseSocket):
 
     def write(self, data):
         out = {
-            'secret': self.secret,
+            "secret": self.secret,
         }
         out.update(data)
         super(Socket, self).write(out)

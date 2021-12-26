@@ -3,8 +3,8 @@ Regent serialiser
 
 Serialises a class's attributes to JSON
 """
-from importlib import import_module
 import json
+from importlib import import_module
 
 
 def get_class_from_name(module_name, class_name):
@@ -13,9 +13,12 @@ def get_class_from_name(module_name, class_name):
     """
     module = import_module(module_name)
     if not hasattr(module, class_name):
-        raise ValueError('Cannot serialise {} - not found in {}'.format(
-            class_name, module_name,
-        ))
+        raise ValueError(
+            "Cannot serialise {} - not found in {}".format(
+                class_name,
+                module_name,
+            )
+        )
 
     return getattr(module, class_name)
 
@@ -42,7 +45,7 @@ class Serialisable(object):
         """
         Serialise all instance attributes which don't start with an underscore
         """
-        attrs = {k: v for k, v in vars(self).items() if not k.startswith('_')}
+        attrs = {k: v for k, v in vars(self).items() if not k.startswith("_")}
         return json.dumps(attrs)
 
 

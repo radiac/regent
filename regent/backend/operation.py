@@ -7,8 +7,8 @@ import time
 
 class Operation(object):
     def __init__(self):
-        timestamp = str(time.time()).replace('.', '')
-        self.uid = '{:0>12}{:0>9}'.format(
+        timestamp = str(time.time()).replace(".", "")
+        self.uid = "{:0>12}{:0>9}".format(
             timestamp,
             random.randint(0, 999999999),
         )

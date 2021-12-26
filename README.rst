@@ -2,19 +2,80 @@
 Regent
 ======
 
-A python framework for performing privileged tasks for untrusted users in the
-absence of an admin.
+A Python framework to allow untrusted users to perform privileged system tasks.
 
 
+Overview
+========
+
+Regent comes in two parts:
+
+* a service which runs as the privileged system user, defines a set of operations it
+  will perform, and listens for requests on a linux socket file
+* a client library to ask the service to perform the operations
+
+A service is intended for use with clients on a single host. Alternatively its socket
+can be mounted within a docker container control its host or other containers.
+
+The authentication system is designed on the assumption that the unprivileged user is
+untrusted and can be compromised. For non-harmful operations a basic shared key will
+deter casual attackers, and for more high-risk commands it supports out-of-channel
+activation, to allow two-factor authentication or administrator approval.
+
+
+Example
+=======
+
+A service which defines a system command (`whoami`) and returns its output::
+
+    import subprocess
+
+    from regent.backend import Operation, Service
+
+
+    class WhoAmI(Operation):
+        def perform(self):
+            value = subprocess.check_output("whoami")
+            value = value.strip()
+            return value
+
+
+    service = Service(
+        socket_path="/tmp/regent-whoami.sock",
+        socket_secret="123456",
+    )
+    service.register("whoami", WhoAmI)
+    service.listen()
+
+
+A client which calls the service::
+
+    from regent.frontend import Client
+
+    client = Client(
+        socket_path="/tmp/regent-whoami.sock",
+        socket_secret="123456",
+    )
+
+    response = client.request("whoami")
+    print(response["data"])
+
+
+More complicated examples can be found in the `examples` dir, including:
+
+* make changes to the firewall
+* restart the server
+
+
+Deployment
+==========
+
+
+Implementation
 ==============
-Regent backend
-==============
 
-Use this to build Regent backends to service requests from frontend apps.
-
-
-Testing your backend manually
-=============================
+Testing your service manually
+-----------------------------
 
 Regent uses human-readable JSON, terminated in a newline. Using ``socat``::
 
@@ -29,13 +90,13 @@ and you'll receive your response::
     {"error": "something failed"}
 
 
-Internal socket API
--------------------
+Internal messaging API
+----------------------
 
-This is the raw API between the frontend and backend. Knowledge of this will
-not be required in normal Regent use if you're using a frontend.
+This is the raw API between the client and service. Knowledge of this will not be
+required in normal Regent use if you're using a client.
 
-A connection to the backend API should send a JSON object with the following
+A connection to the service API should send a JSON object with the following
 key/values:
 
     secret          Socket secret

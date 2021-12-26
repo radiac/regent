@@ -2,6 +2,7 @@ class Auth(object):
     """
     Asynchronous authorisation for operations
     """
+
     state = True
 
     def request(self, op):

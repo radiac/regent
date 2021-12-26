@@ -8,19 +8,19 @@ Test with:
 """
 import subprocess
 
-from regent.backend import Server, Operation
+from regent.backend import Operation, Server
 
 
 class WhoAmI(Operation):
     def perform(self):
-        value = subprocess.check_output('whoami')
+        value = subprocess.check_output("whoami")
         value = value.strip()
         return value
 
 
 server = Server(
-    socket_path='/tmp/regent-whoami.sock',
-    socket_secret='123456',
+    socket_path="/tmp/regent-whoami.sock",
+    socket_secret="123456",
 )
-server.register('whoami', WhoAmI)
+server.register("whoami", WhoAmI)
 server.listen()

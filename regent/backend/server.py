@@ -19,11 +19,11 @@ import traceback
 
 from ..constants import SOCKET_TIMEOUT
 from ..debug import debug
-from ..exceptions import SocketError, ProcessError, DoesNotExist
+from ..exceptions import DoesNotExist, ProcessError, SocketError
 from ..socket import Socket
+from . import storage
 from .auth import Auth
 from .serialiser import deserialise
-from . import storage
 
 
 class Server(object):
@@ -54,34 +54,38 @@ class Server(object):
 
         while 1:
             client = self.socket.accept()
-            debug('Connected')
+            debug("Connected")
 
             try:
                 request = client.read()
-                debug('Received: {}'.format(request))
+                debug("Received: {}".format(request))
                 uid, data = self.process(request)
-                client.write({
-                    'success': True,
-                    'uid': uid,
-                    'data': data,
-                })
+                client.write(
+                    {
+                        "success": True,
+                        "uid": uid,
+                        "data": data,
+                    }
+                )
 
             except Exception as e:
                 # Try to report the error
-                debug('Error processing request:', e, traceback.format_exc())
+                debug("Error processing request:", e, traceback.format_exc())
                 try:
-                    client.write({
-                        'error': '{}'.format(e),
-                    })
+                    client.write(
+                        {
+                            "error": "{}".format(e),
+                        }
+                    )
                 except SocketError:
                     # Fail silently if we can't talk to the client
                     # That may have been the original error
-                    debug('Error writing to client')
+                    debug("Error writing to client")
 
             try:
                 client.close()
             except SocketError:
-                debug('Error closing client')
+                debug("Error closing client")
                 continue
 
     def process(self, request):
@@ -91,30 +95,30 @@ class Server(object):
         Returns uid and response, raises ProcessError if anything goes wrong
         """
         # Check the secret
-        if 'secret' not in request or request['secret'] != self.socket.secret:
+        if "secret" not in request or request["secret"] != self.socket.secret:
             # Auth failed.
             # Sleep for 1 sec - very basic protection against brute-forcing.
             # Given someone would already have shell access to the server
             # though to be able to write to the backend, by the time this
             # becomes an issue you probably have more serious problems.
             time.sleep(1)
-            raise ProcessError('Permission denied')
+            raise ProcessError("Permission denied")
 
         # Prepare the operation
-        if 'op' in request:
+        if "op" in request:
             # New operation - check it's valid then create it
-            if request['op'] not in self.operations:
-                raise ProcessError('Unknown operation')
+            if request["op"] not in self.operations:
+                raise ProcessError("Unknown operation")
 
-            op, auth = self.op_new(request['op'], request.get('data'))
+            op, auth = self.op_new(request["op"], request.get("data"))
 
-        elif 'uid' in request:
+        elif "uid" in request:
             # Existing operation - process it
-            uid = request['uid']
-            op, auth = self.op_existing(uid, request.get('data'))
+            uid = request["uid"]
+            op, auth = self.op_existing(uid, request.get("data"))
 
         else:
-            raise ProcessError('Invalid message: operation not found')
+            raise ProcessError("Invalid message: operation not found")
 
         # Handle authentication response from op
         if auth is True:
@@ -122,7 +126,7 @@ class Server(object):
             pass
 
         elif auth is False:
-            raise ProcessError('Authorisation failed')
+            raise ProcessError("Authorisation failed")
 
         elif isinstance(auth, Auth):
             # Send the auth request
@@ -152,7 +156,7 @@ class Server(object):
         try:
             op.prepare(data)
         except ValueError as e:
-            raise ProcessError('Invalid data: {}'.format(e))
+            raise ProcessError("Invalid data: {}".format(e))
 
         # Ask op if it wants to auth
         auth = op.auth()
@@ -179,7 +183,7 @@ class Server(object):
             auth_obj = deserialise(frozen_auth)
         except ValueError as e:
             raise ProcessError(
-                'Could not deserialise operation: {}'.format(e),
+                "Could not deserialise operation: {}".format(e),
             )
 
         # Process auth

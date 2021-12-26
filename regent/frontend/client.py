@@ -18,19 +18,23 @@ class Client(object):
         """
         Request an operation
         """
-        return self.call_backend({
-            'op': op_name,
-            'data': data,
-        })
+        return self.call_backend(
+            {
+                "op": op_name,
+                "data": data,
+            }
+        )
 
     def auth(self, uid, data=None):
         """
         Authorise a suspended operation
         """
-        return self.call_backend({
-            'uid': uid,
-            'data': data,
-        })
+        return self.call_backend(
+            {
+                "uid": uid,
+                "data": data,
+            }
+        )
 
     def call_backend(self, data):
         """

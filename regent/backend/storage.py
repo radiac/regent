@@ -10,6 +10,7 @@ class Memory(object):
     """
     In-memory storage of frozen ops and auth
     """
+
     def __init__(self):
         self.data = {}
 
@@ -28,6 +29,7 @@ class Database(object):
     """
     Database storage
     """
+
     def __init__(self, db_path):
         self.db_path = db_path
 
