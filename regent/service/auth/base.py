@@ -27,7 +27,7 @@ class Auth(object):
 
         Arguments:
             op          Operation
-            auth_data   Any data passed to the backend on the ``auth`` key of
+            auth_data   Any data passed to the service on the ``auth`` key of
                         the data from the originating requester.
 
         Note: the operation will have been given a new ID to reduce the

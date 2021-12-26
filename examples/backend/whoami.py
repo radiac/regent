@@ -1,14 +1,14 @@
 """
 Who Am I
 
-See which user the backend is running as
+See which user the service is running as
 
 Test with:
     {"secret": "123456", "op": "whoami"}
 """
 import subprocess
 
-from regent.backend import Operation, Server
+from regent.service import Operation, Service
 
 
 class WhoAmI(Operation):
@@ -18,9 +18,9 @@ class WhoAmI(Operation):
         return value
 
 
-server = Server(
+service = Service(
     socket_path="/tmp/regent-whoami.sock",
     socket_secret="123456",
 )
-server.register("whoami", WhoAmI)
-server.listen()
+service.register("whoami", WhoAmI)
+service.listen()

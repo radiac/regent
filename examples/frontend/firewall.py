@@ -1,10 +1,10 @@
 """
-Example frontend to call examples/backend/firewall.py
+Example client to call examples/service/firewall.py
 """
 import sys
 import time
 
-from regent.frontend import Client
+from regent.client import Client
 
 
 client = Client(

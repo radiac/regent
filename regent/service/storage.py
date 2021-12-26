@@ -1,5 +1,5 @@
 """
-Storage for backend serialisation
+Storage for service serialisation
 """
 import os
 

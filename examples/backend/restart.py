@@ -3,7 +3,7 @@ Restart the machine
 """
 from subprocess import call
 
-from regent.backend import Operation, Server, auth
+from regent.service import Operation, Service, auth
 
 
 class Restart(Operation):
@@ -60,9 +60,9 @@ class Restart(Operation):
         call(["service", "restart", self.service_name])
 
 
-server = Server(
+service = Service(
     socket_path="/tmp/regent-restart.sock",
     socket_secret="123456",
 )
-server.register("restart", Restart)
-server.listen()
+service.register("restart", Restart)
+service.listen()

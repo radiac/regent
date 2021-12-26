@@ -1,5 +1,5 @@
 """
-Send a request to a backend
+Send a request to a service
 """
 from ..constants import SOCKET_TIMEOUT
 from ..socket import Socket
@@ -18,7 +18,7 @@ class Client(object):
         """
         Request an operation
         """
-        return self.call_backend(
+        return self.call_service(
             {
                 "op": op_name,
                 "data": data,
@@ -29,16 +29,16 @@ class Client(object):
         """
         Authorise a suspended operation
         """
-        return self.call_backend(
+        return self.call_service(
             {
                 "uid": uid,
                 "data": data,
             }
         )
 
-    def call_backend(self, data):
+    def call_service(self, data):
         """
-        Write to and read from the backend
+        Write to and read from the service
         """
         self.socket.connect()
         self.socket.write(data)

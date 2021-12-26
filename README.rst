@@ -30,7 +30,7 @@ A service which defines a system command (`whoami`) and returns its output::
 
     import subprocess
 
-    from regent.backend import Operation, Service
+    from regent.service import Operation, Service
 
 
     class WhoAmI(Operation):
@@ -50,7 +50,7 @@ A service which defines a system command (`whoami`) and returns its output::
 
 A client which calls the service::
 
-    from regent.frontend import Client
+    from regent.client import Client
 
     client = Client(
         socket_path="/tmp/regent-whoami.sock",
@@ -103,7 +103,7 @@ key/values:
     op              Operation name
     data            Optional: Data for the operation
 
-The backend will return either:
+The service will return either:
 
     error           Error message
 
@@ -116,7 +116,7 @@ or
 JSON objects should be terminated with a newline.
 
 If the original operation requires an asynchronous authentication step, the
-frontend should send the following JSON object:
+client should send the following JSON object:
 
     secret          Socket secret
     uid             UID for a stored operation request (passed from async auth)

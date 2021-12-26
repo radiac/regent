@@ -1,5 +1,5 @@
 """
-Regent backend server
+Regent service
 
 Socket Protocol
 ---------------
@@ -26,7 +26,7 @@ from .auth import Auth
 from .serialiser import deserialise
 
 
-class Server(object):
+class Service(object):
     def __init__(
         self,
         socket_path,
@@ -99,7 +99,7 @@ class Server(object):
             # Auth failed.
             # Sleep for 1 sec - very basic protection against brute-forcing.
             # Given someone would already have shell access to the server
-            # though to be able to write to the backend, by the time this
+            # though to be able to write to the service, by the time this
             # becomes an issue you probably have more serious problems.
             time.sleep(1)
             raise ProcessError("Permission denied")

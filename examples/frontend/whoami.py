@@ -1,7 +1,7 @@
 """
-Example frontend to call examples/backend/whoami.py
+Example client to call examples/service/whoami.py
 """
-from regent.frontend import Client
+from regent.client import Client
 
 
 client = Client(

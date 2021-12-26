@@ -9,7 +9,7 @@ Test with:
 """
 import ipaddress
 
-from regent.backend import Operation, Server
+from regent.service import Operation, Service
 
 
 class FirewallOpen(Operation):
@@ -55,10 +55,10 @@ class FirewallClose(FirewallOpen):
     COMMAND = "ufw delete allow proto tcp from {ip} to any port {port}"
 
 
-server = Server(
+service = Service(
     socket_path="/tmp/regent-firewall.sock",
     socket_secret="123456",
 )
-server.register("open", FirewallOpen)
-server.register("close", FirewallClose)
-server.listen()
+service.register("open", FirewallOpen)
+service.register("close", FirewallClose)
+service.listen()
