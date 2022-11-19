@@ -179,8 +179,8 @@ class Service(object):
 
         # Deserialise
         try:
-            op = deserialise(frozen_op)
-            auth_obj = deserialise(frozen_auth)
+            op = deserialise(*frozen_op)
+            auth_obj = deserialise(*frozen_auth)
         except ValueError as e:
             raise ProcessError(
                 "Could not deserialise operation: {}".format(e),

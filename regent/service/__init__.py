@@ -1,5 +1,5 @@
 """
 Regent service
 """
-from operation import Operation  # noqa
-from service import Service  # noqa
+from .operation import Operation  # noqa
+from .server import Service  # noqa

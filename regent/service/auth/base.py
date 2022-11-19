@@ -1,4 +1,7 @@
-class Auth(object):
+from ..serialiser import Serialisable
+
+
+class Auth(Serialisable):
     """
     Asynchronous authorisation for operations
     """
