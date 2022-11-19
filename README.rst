@@ -15,7 +15,7 @@ Regent comes in two parts:
 * a client library to ask the service to perform the operations
 
 A service is intended for use with clients on a single host. Alternatively its socket
-can be mounted within a docker container control its host or other containers.
+can be mounted within a docker container to control its host or other containers.
 
 The authentication system is designed on the assumption that the unprivileged user is
 untrusted and can be compromised. For non-harmful operations a basic shared key will
@@ -65,10 +65,6 @@ More complicated examples can be found in the `examples` dir, including:
 
 * make changes to the firewall
 * restart the server
-
-
-Deployment
-==========
 
 
 Implementation
