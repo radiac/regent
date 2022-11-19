@@ -117,3 +117,11 @@ client should send the following JSON object:
     secret          Socket secret
     uid             UID for a stored operation request (passed from async auth)
     data            Data for authenticating the auth request
+
+
+Changelog
+=========
+
+0.1.0 - 2022-11-19
+
+* First release of Python version rewritten from original Perl
