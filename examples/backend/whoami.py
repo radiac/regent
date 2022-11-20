@@ -14,7 +14,7 @@ from regent.service import Operation, Service
 class WhoAmI(Operation):
     def perform(self):
         value = subprocess.check_output("whoami")
-        value = value.strip()
+        value = value.strip().decode("utf-8")
         return value
 
 
