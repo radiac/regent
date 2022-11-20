@@ -26,7 +26,7 @@ activation, to allow two-factor authentication or administrator approval.
 Example
 =======
 
-A service which defines a system command (`whoami`) and returns its output::
+A service which defines a system command (``whoami``) and returns its output::
 
     import subprocess
 
@@ -36,7 +36,7 @@ A service which defines a system command (`whoami`) and returns its output::
     class WhoAmI(Operation):
         def perform(self):
             value = subprocess.check_output("whoami")
-            value = value.strip()
+            value = value.strip().decode("utf-8")
             return value
 
 
@@ -61,7 +61,14 @@ A client which calls the service::
     print(response["data"])
 
 
-More complicated examples can be found in the `examples` dir, including:
+These examples can be found in the ``examples`` dir and can be run with::
+
+  DEBUG=1 python examples/backend/whoami.py
+  python examples/frontend/whoami.py
+
+
+More complicated examples with validation and enhanced authentication can be found in
+the ``examples`` dir, including:
 
 * make changes to the firewall
 * restart the server
@@ -92,31 +99,60 @@ Internal messaging API
 This is the raw API between the client and service. Knowledge of this will not be
 required in normal Regent use if you're using a client.
 
+Request
+~~~~~~~
+
 A connection to the service API should send a JSON object with the following
 key/values:
 
-    secret          Socket secret
-    op              Operation name
-    data            Optional: Data for the operation
+``secret``
+  Socket secret
+
+``op``
+  Operation name
+
+``data``
+  Optional: Data for the operation
+
+
+Response
+~~~~~~~~
 
 The service will return either:
 
-    error           Error message
+``error``
+  Error message
 
 or
 
-    success         True
-    uid             Unique ID for this operation request, or null if complete
-    data            Data from the operation or pending async auth
+``success``
+  True
+
+``uid``
+  Unique ID for this operation request, or null if complete
+
+``data``
+  Data from the operation or pending async auth
 
 JSON objects should be terminated with a newline.
+
+
+Auth step
+~~~~~~~~~
 
 If the original operation requires an asynchronous authentication step, the
 client should send the following JSON object:
 
-    secret          Socket secret
-    uid             UID for a stored operation request (passed from async auth)
-    data            Data for authenticating the auth request
+``secret``
+  Socket secret
+
+``uid``
+  UID for a stored operation request (passed from async auth)
+
+``data``
+  Data for authenticating the auth request
+
+The response will be a standard response object described above.
 
 
 Changelog
@@ -125,3 +161,12 @@ Changelog
 0.1.0 - 2022-11-19
 
 * First release of Python version rewritten from original Perl
+
+
+Roadmap
+=======
+
+* Migrate out-of-channel email approval using OTPs
+* Add out-of-channel app-based 2FA using TOTP
+* Migrate to new socket backend to support asyncio and encrypted TCP sockets
+* Improve logging
